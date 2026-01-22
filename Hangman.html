@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hangman KMITL Edition</title>
+
+  <style>
+    body {
+      font-family: "Prompt", sans-serif;
+      background-color: #ffd6bf;
+      color: #111111;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* หน้าปก */
+    #welcome {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(150deg, #E35205, #000000);
+      color: #ffffff;
+    }
+
+    #welcome h1 {
+      font-size: 2.5rem;
+      margin: 20px 0;
+    }
+
+    #welcome p {
+      margin-bottom: 30px;
+    }
+
+    /* โลโก้จริง KMITL */
+    .official-logo {
+      width: 150px;
+      height: auto;
+      margin-bottom: 30px;
+      background-color: white;
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    /* โลโก้ SVG เล็ก */
+    .logo {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 20px;
+    }
+
+    /* ปุ่มเริ่ม */
+    #startBtn {
+      background-color: #000000;
+      color: #E35205;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #startBtn:hover {
+      background-color: #222222;
+    }
+
+    /* หน้าเกม */
+    #game {
+      display: none;
+      padding: 30px;
+    }
+
+    #question {
+      font-size: 1.4rem;
+      margin-bottom: 15px;
+      color: #E35205;
+      font-weight: bold;
+    }
+
+    #wordDisplay {
+      font-size: 2.2rem;
+      letter-spacing: 10px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    /* ปุ่มตัวอักษร */
+    #letters button {
+      margin: 5px;
+      padding: 15px 18px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 10px;
+      background-color: #E35205;
+      color: black;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #letters button:hover {
+      background-color: #c64504;
+    }
+
+    #letters button:disabled {
+      background-color: #ffd6bf;
+      color: #555;
+      cursor: default;
+    }
+
+    #status {
+      font-size: 1.3rem;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    #hint {
+      margin-top: 10px;
+      font-style: italic;
+      color: #E35205;
+    }
+
+    /* แขวนคอ */
+    #hangman {
+      font-family: monospace;
+      white-space: pre;
+      font-size: 1.2rem;
+      margin-top: 20px;
+      color: #E35205;
+      font-weight: bold;
+    }
+
+    #resetBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #000000;
+      color: #E35205;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #resetBtn:hover {
+      background-color: #222222;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- หน้าปก -->
+  <div id="welcome">
+    <!-- โลโก้จริงของ KMITL -->
+    <img 
+      src="https://upload.wikimedia.org/wikipedia/th/9/94/Seal_of_King_Mongkut%27s_Institute_of_Technology_Ladkrabang.svg" 
+      alt="KMITL Official Logo" 
+      class="official-logo"
+      onerror="this.style.display='none'; document.getElementById('backup-logo').style.display='block';"
+    />
+    
+    <!-- โลโก้สำรอง (ถ้าโหลดไม่ได้) -->
+    <svg id="backup-logo" class="official-logo" style="display:none;" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="90" fill="#E35205"/>
+      <text x="100" y="95" text-anchor="middle" font-size="48" fill="white" font-weight="bold">
+        KMITL
+      </text>
+      <text x="100" y="125" text-anchor="middle" font-size="20" fill="white">
+        LADKRABANG
+      </text>
+    </svg>
+    
+    <h1>Hangman KMITL Edition</h1>
+    <p>เกมทายคำธีมมหาวิทยาลัย</p>
+    <button id="startBtn">เริ่มเล่น</button>
+  </div>
+
+  <!-- หน้าเกม -->
+  <div id="game">
+    <!-- โลโก้เล็ก -->
+    <svg class="logo" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="90" fill="#E35205"/>
+      <text x="100" y="95" text-anchor="middle" font-size="48" fill="white" font-weight="bold">
+        KMITL
+      </text>
+      <text x="100" y="125" text-anchor="middle" font-size="20" fill="white">
+        LADKRABANG
+      </text>
+    </svg>
+
+    <h1>Hangman KMITL Edition</h1>
+    <p id="question"></p>
+    <p id="wordDisplay"></p>
+
+    <div id="letters"></div>
+    <div id="hangman"></div>
+
+    <p id="hint"></p>
+    <p id="status"></p>
+
+    <button id="resetBtn">เริ่มใหม่</button>
+  </div>
+
+  <script>
+    // ชุดคำถาม
+    const questions = [
+      {
+        question: "ชื่อเต็มของสถาบัน KMITL คืออะไร",
+        answer: "สถาบันเทคโนโลยีเจ้าคุณทหารลาดกระบัง",
+        hint: "ชื่อทางการของบางมด"
+      },
+      {
+        question: "สีประจำสถาบันพระจอมเกล้าลาดกระบังคือสีอะไร",
+        answer: "สีแสด",
+        hint: "สีเอกลักษณ์"
+      },
+      {
+        question: "สัญลักษณ์ของมหาวิทยาลัยลาดกระบังคืออะไร",
+        answer: "พระมงกุฎ",
+        hint: "เกี่ยวข้องกับพระนามพระจอมเกล้า"
+      },
+      {
+        question: "ต้นไม้ประจำสถาบันพระจอมเกล้าลาดกระบังคืออะไร",
+        answer: "ดอกแคแสด",
+        hint: "ชื่อมีคำว่าแสดเหมือนสีมหาลัย"
+      },
+      {
+        question: "ลาดกระบังมีวิทยาเขตอีกที่หนึ่งคือวิทยาเขตอะไร",
+        answer: "วิทยาเขตชุมพร",
+        hint: "อยู่ภาคใต้ ติดทะเล"
+      },
+      {
+        question: "คำพูดที่แปลว่าโปรเจกต์นี้ไม่รอด",
+        answer: "ทำทันไหม",
+        hint: "ประโยคหลอนตอนดึก"
+      },
+      {
+        question: "ทำเลที่ตั้งของสถาบันพระจอมเกล้าลาดกระบัง",
+        answer: "ลาดกระบัง",
+        hint: "เขตฝั่งตะวันออกของกรุงเทพ"
+      },
+      {
+        question: "สนามบินที่อยู่ใกล้มหาลัยมากที่สุด",
+        answer: "สุวรรณภูมิ",
+        hint: "เห็นเครื่องบินขึ้นลงทุกวัน"
+      },
+      {
+        question: "การเดินทางยอดฮิตของนักศึกษาเข้ามหาลัย",
+        answer: "รถไฟ",
+        hint: "มีสถานีชื่อเดียวกับมหาลัย"
+      },
+      {
+        question: "ถนนหลักที่ใช้เข้ามหาลัย",
+        answer: "ฉลองกรุง",
+        hint: "เส้นนี้แหละ หน้ามหาลัย"
+      }
+    ];
+    
+    // รูปแบบ Hangman
+    const hangmanStages = [
+      "",
+      "O",
+      "O\n|",
+      "O\n|\\",
+      "O\n|\\\n/",
+      "O\n|\\\n/\\",
+      "O\n|\\\n/\\\n☠️"
+    ];
+
+    let selected, guessed, attemptsLeft;
+
+    // เริ่มเกมใหม่
+    function newGame() {
+      selected = questions[Math.floor(Math.random() * questions.length)];
+      guessed = [];
+      attemptsLeft = 6;
+
+      document.getElementById("question").textContent = "❓ " + selected.question;
+      document.getElementById("hint").textContent = "💡 คำใบ้: " + selected.hint;
+      document.getElementById("status").textContent = "โอกาสที่เหลือ: " + attemptsLeft;
+      document.getElementById("hangman").textContent = hangmanStages[0];
+      document.getElementById("wordDisplay").textContent = displayWord();
+
+      // สร้างปุ่มตัวอักษร
+      const thaiLetters = "กขคฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผพฟภมยรลวศษสหฬอฮะาิีึืุูเแโใไั๊๋์่้ำ".split("");
+      const letterDiv = document.getElementById("letters");
+      letterDiv.innerHTML = "";
+
+      thaiLetters.forEach(ch => {
+        const btn = document.createElement("button");
+        btn.textContent = ch;
+        btn.onclick = () => guess(ch);
+        letterDiv.appendChild(btn);
+      });
+    }
+
+    // แสดงคำตอบ
+    function displayWord() {
+      return selected.answer.split("").map(ch =>
+        guessed.includes(ch) ? ch : "_"
+      ).join(" ");
+    }
+
+    // เดาตัวอักษร
+    function guess(letter) {
+      guessed.push(letter);
+
+      // ปิดปุ่มที่กด
+      document.querySelectorAll("#letters button").forEach(btn => {
+        if (btn.textContent === letter) btn.disabled = true;
+      });
+
+      if (selected.answer.includes(letter)) {
+        // ถูก
+        document.getElementById("wordDisplay").textContent = displayWord();
+
+        if (!document.getElementById("wordDisplay").textContent.includes("_")) {
+          document.getElementById("status").textContent =
+            " ✅คุณชนะ!! คำตอบคือ \"" + selected.answer + "\"";
+          disableAllButtons();
+        }
+      } else {
+        // ผิด
+        attemptsLeft--;
+        document.getElementById("status").textContent =
+          "โอกาสที่เหลือ: " + attemptsLeft;
+        document.getElementById("hangman").textContent =
+          hangmanStages[6 - attemptsLeft];
+
+        if (attemptsLeft <= 0) {
+          document.getElementById("status").textContent =
+            "💀 เกมจบ! คำตอบคือ \"" + selected.answer + "\"";
+          disableAllButtons();
+        }
+      }
+    }
+
+    // ปิดปุ่มทั้งหมด
+    function disableAllButtons() {
+      document.querySelectorAll("#letters button")
+        .forEach(btn => btn.disabled = true);
+    }
+
+    // ปุ่มเริ่มเล่น
+    document.getElementById("startBtn").onclick = () => {
+      document.getElementById("welcome").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      newGame();
+    };
+
+    // ปุ่มเริ่มใหม่
+    document.getElementById("resetBtn").onclick = newGame;
+  </script>
+
+</body>
+  </html>
